@@ -42,11 +42,11 @@ terraform {
     }
   }
 
-  backend "s3" {
-    bucket         = "my-terraform-state-ste"
-    key            = "prod/aws_infra"
-    region         = "us-east-1"
-    dynamodb_table = "terraform-locks"
-    encrypt        = true
-  }
+  # backend "s3" {
+  #   bucket         = "my-terraform-state-ste"
+  #   key            = "prod/aws_infra"
+  #   region         = "us-east-1"
+  #   dynamodb_table = "terraform-locks"
+  #   encrypt        = true
+  # }
 }
