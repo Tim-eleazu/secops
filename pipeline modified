@@ -1,0 +1,133 @@
+pipeline {
+    agent any 
+    tools {
+        jdk 'jdk'
+        nodejs 'Nodejs 16.2.0'
+    }
+    stages {
+        stage('Cleaning Workspace') {
+            steps {
+                cleanWs()
+            }
+        }
+        stage('Checkout from Git') {
+            steps {
+                git branch: 'main', url: 'https://github.com/Tim-eleazu/secops.git'
+            }
+        }
+        stage('Installing Dependencies') {
+            steps {
+                dir('Tetris-V1') {
+                    sh 'npm install'
+                }
+            }
+        }
+        stage('Trivy File Scan') {
+            steps {
+                dir('Tetris-V1') {
+                    sh 'trivy fs . > trivyfs.txt'
+                }
+            }
+        }
+        stage("Docker Image Build") {
+            steps {
+                script {
+                    dir('Tetris-V1') {
+                        withDockerRegistry(credentialsId: 'docker', toolName: 'docker') {
+                            sh 'docker system prune -f'
+                            sh 'docker container prune -f'
+                            sh 'docker build -t tetrisv1 .'
+                            sh "docker tag tetrisv1 geologicai/tetrisv1:\${BUILD_NUMBER}"
+                            sh "docker push geologicai/tetrisv1:\${BUILD_NUMBER}"
+                        }
+                    }
+                }
+            }
+        }
+        stage("TRIVY Image Scan") {
+            steps {
+                sh "trivy image --scanners vuln geologicai/tetrisv1:\${BUILD_NUMBER} > trivyimage.txt"
+            }
+        }
+        stage('Checkout Code') {
+            steps {
+                git branch: 'main', url: 'https://github.com/Tim-eleazu/secops.git'
+            }
+        }
+        stage('Update Deployment file') {
+            environment {
+                GIT_REPO_NAME = "secops"
+                GIT_USER_NAME = "Tim-eleazu"
+            }
+            steps {
+                dir('Manifest-file') {
+                    withCredentials([string(credentialsId: 'github', variable: 'GITHUB_TOKEN')]) {
+                        sh '''
+                            git config user.email "timeleazudevops@gmail.com"
+                            git config user.name "Tim-eleazu"
+                            BUILD_NUMBER=\${BUILD_NUMBER}
+                            echo \$BUILD_NUMBER
+                            imageTag=\$(grep -oP '(?<=tetrisv1:)[^ ]+' deployment-service.yml)
+                            echo \$imageTag
+                            sed -i "s/tetrisv1:\${imageTag}/tetrisv1:\${BUILD_NUMBER}/" deployment-service.yml
+                            git add deployment-service.yml
+                            git commit -m "Update deployment Image to version \${BUILD_NUMBER}"
+                            git push https://\${GITHUB_TOKEN}@github.com/\${GIT_USER_NAME}/\${GIT_REPO_NAME} HEAD:master
+                        '''
+                    }
+                }
+            }
+        }
+    }
+} 
+
+ 
+
+
+
+pipeline version 2 
+pipeline {
+    agent any 
+    tools {
+        jdk 'jdk'
+        nodejs 'Nodejs 16.2.0'
+    }
+    stages {
+        stage('Cleaning Workspace') {
+            steps {
+                cleanWs()
+            }
+        }
+        stage('Checkout from Git') {
+            steps {
+                git branch: 'main', url: 'https://github.com/Tim-eleazu/secops.git'
+            }
+        }
+        stage('Pull Latest Changes') {
+            steps {
+                dir('Manifest-file') { // Ensure this is the directory containing your Git repository
+                    withCredentials([string(credentialsId: 'github_token', variable: 'GITHUB_TOKEN')]) {
+                        sh 'git pull https://$GITHUB_TOKEN@github.com/Tim-eleazu/secops.git main'
+                    }
+                }
+            }
+        }
+        stage('Update Deployment File and Push') {
+            steps {
+                dir('Manifest-file') {
+                    withCredentials([string(credentialsId: 'github_token', variable: 'GITHUB_TOKEN')]) {
+                        sh '''
+                            git config user.email "timeleazudevops@gmail.com"
+                            git config user.name "Tim-eleazu"
+                            echo "Updating deployment file for BUILD_NUMBER: ${BUILD_NUMBER}"
+                            sed -i "s/tetrisv1:latest/tetrisv1:${BUILD_NUMBER}/" deployment-service.yml
+                            git add deployment-service.yml
+                            git commit -m "Update deployment Image to version ${BUILD_NUMBER}"
+                            git push https://$GITHUB_TOKEN@github.com/Tim-eleazu/secops.git main
+                        '''
+                    }
+                }
+            }
+        }
+    }
+}
