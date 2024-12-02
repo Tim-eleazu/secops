@@ -12,7 +12,6 @@
 
 ![Infrastructure Diagram](assets/Infra.gif)
 
-Welcome to an immersive DevSecOps learning experience! This project guides you through deploying a Tetris game on AWS EKS while mastering the art of DevSecOps.
 
 ## Directories 📂
 
@@ -32,9 +31,3 @@ Welcome to an immersive DevSecOps learning experience! This project guides you t
 6. **Docker:** Containerized application deployment
 7. **SonarQube:** Unveiling code quality insights
 8. **Terraform:** Infrastructure as Code for AWS EKS
-
-## Acknowledgments 🙌
-   Special thanks to the open-source community and the contributors who make learning and collaboration an incredible journey.
-
-## License 📄
-   This project is licensed under the Apache-2.0 license see the [LICENSE](http://www.apache.org/licenses/) file for details.
